@@ -9,7 +9,7 @@ class Animations(enum.Enum):
 class Board:
     def __init__(self):
         self.tiles = [[0 for _ in range(4)] for _ in range(4)]
-        self.static_tiles = []
+        self.score = 0
         self.animations = []
         self.queue = []
         self.game_ended = False
@@ -111,6 +111,7 @@ class Board:
             elif animation[0] == Animations.MergeTile:
                 before, after = animation[1]
                 self.tiles[after[0]][after[1]] *= 2
+                self.score += self.tiles[after[0]][after[1]]
 
         if moved:
             self.queue_new_tile()
@@ -159,3 +160,6 @@ class Board:
 
     def has_game_ended(self):
         return self.game_ended
+
+    def get_score(self):
+        return self.score

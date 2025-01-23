@@ -124,17 +124,24 @@ def draw_overlay(surface, board, overlay_progress):
     t = overlay_progress * (2 - overlay_progress)
     overlay = pygame.Surface((500, 500))
     overlay.fill((238, 228, 218))
-    overlay.set_alpha(128 * t)
+    overlay.set_alpha(171 * t)
     surface.blit(overlay, (50, 50))
 
     if board.has_2048():
-        text_surface = font_large.render("You Won", True, TEXT_COLORS[2])
+        text1_surface = font_large.render("You Won", True, TEXT_COLORS[2])
     else:
-        text_surface = font_large.render("Game Over", True, TEXT_COLORS[2])
-    text_surface.set_alpha(255 * t)
-    text_rect = text_surface.get_rect()
-    text_rect.center = (300, 300)
-    surface.blit(text_surface, text_rect)
+        text1_surface = font_large.render("Game Over", True, TEXT_COLORS[2])
+    text1_surface.set_alpha(255 * t)
+    text1_rect = text1_surface.get_rect()
+    text1_rect.center = (300, 250)
+    surface.blit(text1_surface, text1_rect)
+
+    score_text = "Score: " + str(board.get_score())
+    text2_surface = font_small.render(score_text, True, TEXT_COLORS[2])
+    text2_surface.set_alpha(255 * t)
+    text2_rect = text2_surface.get_rect()
+    text2_rect.center = (300, 350)
+    surface.blit(text2_surface, text2_rect)
 
 def main():
     board = Board()
@@ -148,6 +155,7 @@ def main():
     running = True
     dt = 0
     while running:
+        pygame.display.set_caption("2048 | Score: " + str(board.get_score()))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
