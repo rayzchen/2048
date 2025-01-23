@@ -33,103 +33,63 @@ class Board:
         self.queue.append((Animations.MoveTile, (before, after)))
 
     def play_move(self, move):
-        # TODO: merge all 4 branches
-        if move == 0:
-            # Down, row increases
-            for col in range(4):
-                line = [self.tiles[row][col] for row in range(4)]
-                can_merge = [True for _ in range(4)]
-                for row in [2, 1, 0]:
-                    if line[row] == 0 or line[row + 1] != line[row] and line[row + 1] != 0:
-                        # no tile or cannot move
-                        continue
-                    dest_row = row
-                    while True:
-                        if dest_row != 3 and line[dest_row + 1] == line[row] and can_merge[dest_row + 1]:
-                            dest_row += 1
-                            self.queue_move_tile((row, col), (dest_row, col))
-                            line[dest_row] = line[row] * 2
-                            line[row] = 0
-                            can_merge[dest_row] = False
-                            break
-                        elif dest_row == 3 or line[dest_row + 1] != 0:
-                            self.queue_move_tile((row, col), (dest_row, col))
-                            line[dest_row] = line[row]
-                            line[row] = 0
-                            break
-                        dest_row += 1
-        elif move == 1:
-            # Up, row decreases
-            for col in range(4):
-                line = [self.tiles[row][col] for row in range(4)]
-                can_merge = [True for _ in range(4)]
-                for row in [1, 2, 3]:
-                    if line[row] == 0 or line[row - 1] != line[row] and line[row - 1] != 0:
-                        # no tile or cannot move
-                        continue
-                    dest_row = row
-                    while True:
-                        if dest_row != 0 and line[dest_row - 1] == line[row] and can_merge[dest_row - 1]:
-                            dest_row -= 1
-                            self.queue_move_tile((row, col), (dest_row, col))
-                            line[dest_row] = line[row] * 2
-                            line[row] = 0
-                            can_merge[dest_row] = False
-                            break
-                        elif dest_row == 0 or line[dest_row - 1] != 0:
-                            self.queue_move_tile((row, col), (dest_row, col))
-                            line[dest_row] = line[row]
-                            line[row] = 0
-                            break
-                        dest_row -= 1
-        elif move == 2:
-            # Right, col increases
-            for row in range(4):
-                line = self.tiles[row].copy()
-                can_merge = [True for _ in range(4)]
-                for col in [2, 1, 0]:
-                    if line[col] == 0 or line[col + 1] != line[col] and line[col + 1] != 0:
-                        # no tile or cannot move
-                        continue
-                    dest_col = col
-                    while True:
-                        if dest_col != 3 and line[dest_col + 1] == line[col] and can_merge[dest_col + 1]:
-                            dest_col += 1
-                            self.queue_move_tile((row, col), (row, dest_col))
-                            line[dest_col] = line[col] * 2
-                            line[col] = 0
-                            can_merge[dest_col] = False
-                            break
-                        elif dest_col == 3 or line[dest_col + 1] != 0:
-                            self.queue_move_tile((row, col), (row, dest_col))
-                            line[dest_col] = line[col]
-                            line[col] = 0
-                            break
-                        dest_col += 1
-        elif move == 3:
-            # Left, col decreases
-            for row in range(4):
-                line = self.tiles[row].copy()
-                can_merge = [True for _ in range(4)]
-                for col in [1, 2, 3]:
-                    if line[col] == 0 or line[col - 1] != line[col] and line[col - 1] != 0:
-                        # no tile or cannot move
-                        continue
-                    dest_col = col
-                    while True:
-                        if dest_col != 0 and line[dest_col - 1] == line[col] and can_merge[dest_col - 1]:
-                            dest_col -= 1
-                            self.queue_move_tile((row, col), (row, dest_col))
-                            line[dest_col] = line[col] * 2
-                            line[col] = 0
-                            can_merge[dest_col] = False
-                            break
-                        elif dest_col == 0 or line[dest_col - 1] != 0:
-                            self.queue_move_tile((row, col), (row, dest_col))
-                            line[dest_col] = line[col]
-                            line[col] = 0
-                            break
-                        dest_col -= 1
+        # lines: the 4 rows/columns
+        # direction: 0 if y, 1 if x
+        if move == 0 or move == 1:
+            lines = [[self.tiles[i][j] for i in range(4)] for j in range(4)]
+            direction = 0
+        else:
+            lines = [self.tiles[i].copy() for i in range(4)]
+            direction = 1
+        
+        # next: direction to increment/decrement
+        # starts: tiles to check for movement
+        # end: end of the line where no more movement can occur
+        if move == 0 or move == 2:
+            next = 1
+            starts = [2, 1, 0]
+            end = 3
+        else:
+            next = -1
+            starts = [1, 2, 3]
+            end = 0
+        
+        for linenum in range(4):
+            line = lines[linenum]
+            can_merge = [True for _ in range(4)]
+            moves = []
+            for start in starts:
+                if line[start] == 0 or line[start + next] != line[start] and line[start + next] != 0:
+                    # no tile or cannot move
+                    continue
+                dest = start
+                while True:
+                    next_dest = dest + next
+                    if dest != end and line[next_dest] == line[start] and can_merge[next_dest]:
+                        # next tile is same as start, and hasn't been merged before
+                        moves.append((start, next_dest))
+                        line[next_dest] = line[start]
+                        line[start] = 0
+                        can_merge[next_dest] = False
+                        break
+                    if dest == end or line[next_dest] != 0:
+                        # reached the end or a different tile
+                        moves.append((start, dest))
+                        line[dest] = line[start]
+                        line[start] = 0
+                        break
+                    dest = next_dest
+            for start, dest in moves:
+                if direction == 0:
+                    # moving in y direction, column doesn't change
+                    before = (start, linenum)
+                    after = (dest, linenum)
+                else:
+                    # moving in x direction, row doesn't change
+                    before = (linenum, start)
+                    after = (linenum, dest)
+                self.queue_move_tile(before, after)
+
         self.resolve_animations()
         return len(self.animations) > 0
 
