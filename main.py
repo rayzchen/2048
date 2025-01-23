@@ -45,13 +45,27 @@ INPUTS = {
     pygame.K_a: 3,
 }
 
-font = pygame.font.Font("freesansbold.ttf", 60)
+font_large = pygame.font.Font("freesansbold.ttf", 60)
+font_medium = pygame.font.Font("freesansbold.ttf", 50)
+font_small = pygame.font.Font("freesansbold.ttf", 40)
+
+# measured by digit count
+FONTS = {
+    1: font_large,
+    2: font_large,
+    3: font_medium,
+    4: font_small,
+}
+
 def draw_tile(surface, number, position, size=100):
-    rect = (position[0] - size//2, position[1] - size//2, size, size)
-    pygame.draw.rect(surface, TILE_COLORS[number], rect, border_radius=3)
+    tile_rect = (position[0] - size//2, position[1] - size//2, size, size)
+    pygame.draw.rect(surface, TILE_COLORS[number], tile_rect, border_radius=3)
+
+    font = FONTS[len(str(number))]
     text_surface = font.render(str(number), True, TEXT_COLORS[number])
     if size != 100:
         text_surface = pygame.transform.smoothscale_by(text_surface, size/100)
+
     text_rect = text_surface.get_rect()
     text_rect.center = position
     surface.blit(text_surface, text_rect)

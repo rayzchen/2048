@@ -41,7 +41,7 @@ class Board:
         else:
             lines = [self.tiles[i].copy() for i in range(4)]
             direction = 1
-        
+
         # next: direction to increment/decrement
         # starts: tiles to check for movement
         # end: end of the line where no more movement can occur
@@ -53,7 +53,7 @@ class Board:
             next = -1
             starts = [1, 2, 3]
             end = 0
-        
+
         for linenum in range(4):
             line = lines[linenum]
             can_merge = [True for _ in range(4)]
