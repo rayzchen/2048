@@ -81,11 +81,67 @@ def draw_background(surface):
 def interpolate(a, b, x):
     return a + (b - a) * x
 
+def draw_animation(surface, board, anim_progress, dt):
+    for i, j in board.get_static_tiles():
+        position = (120 + j * 120, 120 + i * 120)
+        draw_tile(surface, board.get_tile(i, j), position)
+
+    for animation in board.get_animations():
+        if animation[0] == Animations.MoveTile:
+            before, after = animation[1]
+            t = anim_progress * anim_progress * (3 - 2*anim_progress)
+            x = interpolate(before[1], after[1], t)
+            y = interpolate(before[0], after[0], t)
+            position = (int(120 + x * 120), int(120 + y * 120))
+            draw_tile(surface, board.get_tile(before[0], before[1]), position)
+        elif animation[0] == Animations.NewTile:
+            t = anim_progress * (2 - anim_progress)
+            location, number = animation[1]
+            position = (120 + location[1] * 120, 120 + location[0] * 120)
+            draw_tile(surface, number, position, int(100 * t))
+        elif animation[0] == Animations.MergeTile:
+            t = 0.5 * (anim_progress + 1) * (2 - anim_progress)
+            _, after = animation[1]
+            number = board.get_tile(after[0], after[1]) * 2
+            position = (120 + after[1] * 120, 120 + after[0] * 120)
+            draw_tile(surface, number, position, int(100 * t))
+
+    anim_progress += dt / 0.1
+    if anim_progress > 1:
+        board.resolve_animations()
+        anim_progress = 0
+    return anim_progress
+
+def draw_static(surface, board):
+    for i in range(4):
+        for j in range(4):
+            tile = board.get_tile(i, j)
+            if tile:
+                position = (120 + j * 120, 120 + i * 120)
+                draw_tile(surface, tile, position)
+
+def draw_overlay(surface, board, overlay_progress):
+    t = overlay_progress * (2 - overlay_progress)
+    overlay = pygame.Surface((500, 500))
+    overlay.fill((238, 228, 218))
+    overlay.set_alpha(128 * t)
+    surface.blit(overlay, (50, 50))
+
+    if board.has_2048():
+        text_surface = font_large.render("You Won", True, TEXT_COLORS[2])
+    else:
+        text_surface = font_large.render("Game Over", True, TEXT_COLORS[2])
+    text_surface.set_alpha(255 * t)
+    text_rect = text_surface.get_rect()
+    text_rect.center = (300, 300)
+    surface.blit(text_surface, text_rect)
+
 def main():
     board = Board()
     board.queue_new_tile()
     board.resolve_animations()
     anim_progress = 0
+    overlay_progress = -5
 
     window = pygame.display.set_mode((600, 600))
     clock = pygame.time.Clock()
@@ -98,49 +154,28 @@ def main():
                 break
             if event.type == pygame.KEYDOWN:
                 if event.key in INPUTS:
+                    if board.has_game_ended():
+                        continue
                     if board.is_animating():
+                        board.resolve_animations()
                         board.resolve_animations()
                         anim_progress = 0
                     board.play_move(INPUTS[event.key])
 
         draw_background(window)
-
-        if board.is_animating():
-            for i, j in board.get_static_tiles():
-                position = (120 + j * 120, 120 + i * 120)
-                draw_tile(window, board.get_tile(i, j), position)
-
-            for animation in board.get_animations():
-                if animation[0] == Animations.MoveTile:
-                    before, after = animation[1]
-                    t = anim_progress * anim_progress * (3 - 2*anim_progress)
-                    x = interpolate(before[1], after[1], t)
-                    y = interpolate(before[0], after[0], t)
-                    position = (int(120 + x * 120), int(120 + y * 120))
-                    draw_tile(window, board.get_tile(before[0], before[1]), position)
-                elif animation[0] == Animations.NewTile:
-                    t = anim_progress * (2 - anim_progress)
-                    location, number = animation[1]
-                    position = (120 + location[1] * 120, 120 + location[0] * 120)
-                    draw_tile(window, number, position, int(100 * t))
-                elif animation[0] == Animations.MergeTile:
-                    t = 0.5 * (anim_progress + 1) * (2 - anim_progress)
-                    _, after = animation[1]
-                    number = board.get_tile(after[0], after[1]) * 2
-                    position = (120 + after[1] * 120, 120 + after[0] * 120)
-                    draw_tile(window, number, position, int(100 * t))
-
-            anim_progress += dt / 0.1
-            if anim_progress > 1:
-                board.resolve_animations()
-                anim_progress = 0
+        if board.has_game_ended():
+            draw_static(window, board)
+            if overlay_progress < 1:
+                overlay_progress += dt / 0.2
+            else:
+                overlay_progress = 1
+            if overlay_progress > 0:
+                draw_overlay(window, board, overlay_progress)
         else:
-            for i in range(4):
-                for j in range(4):
-                    tile = board.get_tile(i, j)
-                    if tile:
-                        position = (120 + j * 120, 120 + i * 120)
-                        draw_tile(window, tile, position)
+            if board.is_animating():
+                anim_progress = draw_animation(window, board, anim_progress, dt)
+            else:
+                draw_static(window, board)
 
         pygame.display.flip()
         dt = clock.tick(60) / 1000

@@ -12,6 +12,7 @@ class Board:
         self.static_tiles = []
         self.animations = []
         self.queue = []
+        self.game_ended = False
 
     def get_tile(self, row, column):
         return self.tiles[row][column]
@@ -116,6 +117,8 @@ class Board:
         self.animations = self.queue
         self.queue = []
 
+        self.game_ended = self.has_2048() or self.no_moves_left()
+
     def is_animating(self):
         return len(self.animations) > 0
 
@@ -128,3 +131,31 @@ class Board:
             if animation[0] == Animations.MoveTile and animation[1][0] in tiles:
                 tiles.remove(animation[1][0])
         return tiles
+
+    def no_moves_left(self):
+        for i in range(4):
+            for j in range(4):
+                if self.tiles[i][j] == 0:
+                    return False
+
+        for i in range(4):
+            for j in range(1, 4):
+                if self.tiles[i][j] == self.tiles[i][j - 1]:
+                    return False
+
+        for j in range(4):
+            for i in range(1, 4):
+                if self.tiles[i][j] == self.tiles[i - 1][j]:
+                    return False
+
+        return True
+
+    def has_2048(self):
+        for i in range(4):
+            for j in range(4):
+                if self.tiles[i][j] == 2048:
+                    return True
+        return False
+
+    def has_game_ended(self):
+        return self.game_ended
